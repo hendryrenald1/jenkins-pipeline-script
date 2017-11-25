@@ -1,0 +1,47 @@
+node {
+  stage('SCM') {
+  git 'https://github.com/hendryrenald1/spring-petclinic.git'
+  }
+ 
+  
+
+  
+stage('SonarQube analysis') {
+   
+// requires SonarQube Scanner 2.8+
+    def scannerHome = tool 'iibscanner';
+    echo "$scannerHome"
+    withSonarQubeEnv('iibscanner') {
+    sh "${scannerHome}/bin/sonar-scanner"
+    //  sh "${sonarHome}/bin/sonar-runner -Dsonar.host.url=http://localhost:9000  -Dsonar.login=d655b124fc53a058f662c5ba1263e5d4d150d133    -Dsonar.projectName=petclinic -Dsonar.projectVersion=1 -Dsonar.projectKey=petclinic -Dsonar.sources=."
+
+    
+    }
+
+}
+sh 'sleep 10' 
+// No need to occupy a node
+stage("Quality Gate"){
+    timeout(time: 1, unit: 'HOURS') { // Just in case something goes wrong, pipeline will be killed after a timeout
+    def qg = waitForQualityGate() // Reuse taskId previously collected by withSonarQubeEnv
+    if (qg.status != 'OK') {
+    error "Pipeline aborted due to quality gate failure: ${qg.status}"
+    }
+    }
+}
+  stage("Copy file to remote Server"){
+    echo "${WORKSPACE}"
+   dir ('/var/jenkins_home/ansible-cfg') {
+        ansiblePlaybook( 
+        playbook: 'copy-file.yml',
+        inventory: 'inventory', 
+      extraVars: [
+            source_folder: '${WORKSPACE}'
+            
+        ]
+        )
+       
+   // ansiblePlaybook inventory: "inventory", playbook: "copy-file.yml --extra-vars '{'source_folder':${WORKSPACE}/pom.xml}'", sudoUser: null
+  }
+  }
+}
