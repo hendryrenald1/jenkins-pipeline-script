@@ -44,4 +44,23 @@ stage("Quality Gate"){
    // ansiblePlaybook inventory: "inventory", playbook: "copy-file.yml --extra-vars '{'source_folder':${WORKSPACE}/pom.xml}'", sudoUser: null
   }
   }
+  stage("Execute build in the remote location"){
+   
+   dir ('/var/jenkins_home/ansible-cfg') {
+        ansiblePlaybook( 
+        playbook: 'execute-build.yml',
+        inventory: 'inventory', 
+      extraVars: [
+            source_folder: '${WORKSPACE}'
+            
+        ]
+        )
+       
+   // ansiblePlaybook inventory: "inventory", playbook: "copy-file.yml --extra-vars '{'source_folder':${WORKSPACE}/pom.xml}'", sudoUser: null
+  }
+  }
+  
+  
+  
 }
+
